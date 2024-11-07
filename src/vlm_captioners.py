@@ -12,9 +12,9 @@ class Llava_Flan_captioner:
     def __init__(self, vlm_model, processor, text_model, text_tokenizer, device='cuda'):
 
         self.processor = processor
-        self.vlm_model = vlm_model.half().to(device) if vlm_model else None
+        self.vlm_model = vlm_model.half().to("cpu") if vlm_model else None #.to(device)
         self.text_tokenizer = text_tokenizer
-        self.text_model = text_model.half().to(device) if text_model else None
+        self.text_model = text_model.half().to("cpu") if text_model else None #.to(device)
         self.device = device
         self.vision_instruction = ""
         self.text_instruction = ""
@@ -166,6 +166,7 @@ class Llava_Flan_captioner:
             inputs = self.processor(prompt, 
             image, return_tensors="pt").to(self.device)
 
+            self.vlm_model.to(self.device)
             output = self.vlm_model.generate(
                 **inputs,
                 max_length=max_length,
@@ -182,10 +183,11 @@ class Llava_Flan_captioner:
         output_str = re.sub(r"\[INST\].*?\[\/INST\]", "", output_str, flags=re.DOTALL).strip()
 
         # Clear memory
+        self.vlm_model.to("cpu")
         del inputs, output
         torch.cuda.empty_cache()
         gc.collect()
-
+        
         return output_str
 
     def convert_caption(self, raw_caption="", instruction_prompt="", 
@@ -211,6 +213,7 @@ class Llava_Flan_captioner:
             self.text_model.config.pad_token_id = self.text_tokenizer.pad_token_id
 
         with torch.no_grad(), torch.amp.autocast('cuda'):
+            self.text_model.to(self.device)
             output_ids = self.text_model.generate(
                 input_ids,
                 max_length=max_length,
@@ -235,10 +238,11 @@ class Llava_Flan_captioner:
             output_text = self.replace_main_subject(output_text, self.main_object_replacement)
 
         # Clear memory
+        self.text_model.to("cpu")
         del input_ids, output_ids
         torch.cuda.empty_cache()
         gc.collect()
-
+       
         return output_text
 
     def prepare_and_convert(self, input_prompt=None, image_path=None, main_object_replacement=None,
