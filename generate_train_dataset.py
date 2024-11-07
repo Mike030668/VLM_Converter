@@ -16,7 +16,7 @@ from transformers import LlavaNextProcessor, LlavaNextForConditionalGeneration
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 
 # Import your captioner class (ensure it's properly imported or defined)
-from vlm_captioners import Llava_Flan_captioner  # Update this import based on your actual file structure
+from src.vlm_captioners import Llava_Flan_captioner  # Update this import based on your actual file structure
 
 def parse_special_corrections(corrections_str):
     corrections = []
