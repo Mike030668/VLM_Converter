@@ -1,8 +1,8 @@
 import os
 import torch
 import json
+from transformers import LlavaNextProcessor, LlavaNextForConditionalGeneration
 from transformers import T5Tokenizer, T5ForConditionalGeneration
-from llava import LlavaNextProcessor, LlavaNextForConditionalGeneration
 
 def load_vlm_model(vlm_model_name, device):
     global vl_model, vl_processor
