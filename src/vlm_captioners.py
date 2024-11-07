@@ -27,8 +27,8 @@ class Llava_Flan_captioner:
             'additional_special_tokens': [
                 self.main_object_replacement,
                 self.main_object_replacement.capitalize(),
-                f"{self.main_object_replacement}'s",
-                f"{self.main_object_replacement}'s".capitalize()
+                #f"{self.main_object_replacement}'s",
+                #f"{self.main_object_replacement}'s".capitalize()
             ]
         }
 
@@ -46,6 +46,7 @@ class Llava_Flan_captioner:
         return None
 
 
+    """
     def replace_pronouns(self, caption, replacement):
         doc = self.nlp(caption)
         new_tokens = []
@@ -79,10 +80,9 @@ class Llava_Flan_captioner:
         new_caption = ' '.join(new_tokens)
         # Fix spacing around punctuation
         new_caption = re.sub(r'\s([?.!",\'])(?=(?:\s|$))', r'\1', new_caption)
-        return new_caption.strip()
+        return new_caption.strip() 
+        """
 
-
-    """
     def replace_pronouns(self, caption, replacement):
         # Map pronouns to replacements
         sentences = list(self.nlp(caption).sents)
@@ -119,9 +119,6 @@ class Llava_Flan_captioner:
                     )
             new_caption += sent_text + " "
         return new_caption.strip()
-
-    """
-
 
 
     def replace_main_subject(self, caption, replacement):
@@ -198,9 +195,6 @@ class Llava_Flan_captioner:
         if not instruction_prompt:
             instruction_prompt = self.text_instruction
 
-        # Replace main object if specified
-        #if self.main_object_replacement:
-        #    raw_caption = self.replace_main_subject(raw_caption, self.main_object_replacement)
 
         instruction_prompt = f"{instruction_prompt}\n{raw_caption}"
         input_ids = self.text_tokenizer(instruction_prompt, 
