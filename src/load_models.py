@@ -4,6 +4,12 @@ import json
 from transformers import LlavaNextProcessor, LlavaNextForConditionalGeneration
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 
+# Global variables to hold models and tokenizers
+vl_model = None
+vl_processor = None
+txt_model = None
+txt_tokenizer = None
+
 def load_vlm_model(vlm_model_name, device):
     global vl_model, vl_processor
     if vl_model is None or vl_processor is None:
@@ -38,30 +44,3 @@ def load_text_model(text_model_name, device):
         print("Text model is already loaded.")
 
     return txt_tokenizer, txt_model
-
-
-def load_instructions(instructions_dir, instructions_name='instructions_0'):
-    instructions_file = os.path.join(instructions_dir, instructions_name)
-    if not os.path.exists(instructions_file):
-        raise FileNotFoundError(f"Instructions file not found: {instructions_file}")
-
-    if instructions_file.lower().endswith('.json'):
-        with open(instructions_file, 'r', encoding='utf-8') as f:
-            instructions = json.load(f)
-        vision_instruction = instructions.get('vision_instruction', '')
-        text_instruction = instructions.get('text_instruction', '')
-    elif instructions_file.lower().endswith('.txt'):
-        with open(instructions_file, 'r', encoding='utf-8') as f:
-            content = f.read()
-        # Assuming the instructions are separated by '===VISION===' and '===TEXT==='
-        vision_marker = '===VISION==='
-        text_marker = '===TEXT==='
-        if vision_marker in content and text_marker in content:
-            vision_instruction = content.split(vision_marker)[1].split(text_marker)[0].strip()
-            text_instruction = content.split(text_marker)[1].strip()
-        else:
-            raise ValueError("Instructions file format is incorrect.")
-    else:
-        raise ValueError("Instructions file must be a .json or .txt file.")
-
-    return vision_instruction, text_instruction
