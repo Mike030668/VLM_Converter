@@ -27,8 +27,8 @@ class Llava_Flan_captioner:
             'additional_special_tokens': [
                 self.main_object_replacement,
                 self.main_object_replacement.capitalize(),
-                f"{self.main_object_replacement}'s",
-                f"{self.main_object_replacement}'s".capitalize()
+                #f"{self.main_object_replacement}'s",
+                #f"{self.main_object_replacement}'s".capitalize()
             ]
         }
 
@@ -110,7 +110,7 @@ class Llava_Flan_captioner:
         return caption
 
     def vlm_caption(self, image_path, prompt="", resize=(768, 768), max_length=768, 
-    num_beams=5, no_repeat_ngram_size=3, repetition_penalty=1.2):
+    num_beams=5, no_repeat_ngram_size=3, repetition_penalty=1.2, length_penalty = 2.0):
         try:
             # Load and resize image
             image = Image.open(image_path)
@@ -133,10 +133,14 @@ class Llava_Flan_captioner:
                 num_beams=num_beams,
                 early_stopping=True,
                 no_repeat_ngram_size=no_repeat_ngram_size,
-                repetition_penalty=repetition_penalty
+                repetition_penalty=repetition_penalty,
+                length_penalty = length_penalty,
+                pad_token_id =0
             )
 
-        output_str = self.processor.decode(output[0], skip_special_tokens=True).strip()
+        output_str = self.processor.decode(output[0],
+                                           skip_special_tokens=True,
+                                           ).strip()
         output_str = re.sub(r"\[INST\].*?\[\/INST\]", "", output_str, flags=re.DOTALL).strip()
 
         # Clear memory
