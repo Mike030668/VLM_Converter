@@ -27,8 +27,8 @@ class Llava_Flan_captioner:
             'additional_special_tokens': [
                 self.main_object_replacement,
                 self.main_object_replacement.capitalize(),
-                #f"{self.main_object_replacement}'s",
-                #f"{self.main_object_replacement}'s".capitalize()
+                f"{self.main_object_replacement}'s",
+                f"{self.main_object_replacement}'s".capitalize()
             ]
         }
 
@@ -45,6 +45,44 @@ class Llava_Flan_captioner:
                     return subject_phrase
         return None
 
+
+    def replace_pronouns(self, caption, replacement):
+        doc = self.nlp(caption)
+        new_tokens = []
+        main_object_introduced = False
+
+        for sent in doc.sents:
+            # Check if the main object is introduced in the sentence
+            if not main_object_introduced:
+                if replacement.lower() in sent.text.lower():
+                    main_object_introduced = True
+
+            # Process tokens in the sentence
+            for token in sent:
+                token_text = token.text
+                if main_object_introduced:
+                    # Replace pronouns that likely refer to the main object
+                    if token.pos_ == 'PRON' and token.tag_ in {'PRP', 'PRP$'}:
+                        # Handle possessive pronouns
+                        if token.tag_ == 'PRP$':
+                            if token.text[0].isupper():
+                                token_text = replacement.capitalize() + "'s"
+                            else:
+                                token_text = replacement + "'s"
+                        else:
+                            if token.text[0].isupper():
+                                token_text = replacement.capitalize()
+                            else:
+                                token_text = replacement
+                new_tokens.append(token_text)
+        # Reconstruct the caption
+        new_caption = ' '.join(new_tokens)
+        # Fix spacing around punctuation
+        new_caption = re.sub(r'\s([?.!",\'])(?=(?:\s|$))', r'\1', new_caption)
+        return new_caption.strip()
+
+
+    """
     def replace_pronouns(self, caption, replacement):
         # Map pronouns to replacements
         sentences = list(self.nlp(caption).sents)
@@ -81,6 +119,9 @@ class Llava_Flan_captioner:
                     )
             new_caption += sent_text + " "
         return new_caption.strip()
+
+    """
+
 
 
     def replace_main_subject(self, caption, replacement):

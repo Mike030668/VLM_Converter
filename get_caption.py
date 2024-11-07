@@ -1,6 +1,7 @@
 # get_caption.py
 import os
 import json
+import re
 from src.utils import load_vlm_model, load_text_model
 
 # Import your captioner class (adjust the import path as necessary)
@@ -24,7 +25,12 @@ print(f"Running on {ide_type}")
 
 def apply_special_corrections(final_caption, special_corrections):
     for pattern, replacement in special_corrections:
-        final_caption = final_caption.replace(pattern, replacement)
+        # Escape special characters in the pattern
+        pattern_escaped = re.escape(pattern)
+        # Create a regex pattern with word boundaries
+        regex_pattern = r'\b{}\b'.format(pattern_escaped)
+        # Use re.sub with the regex pattern and IGNORECASE flag
+        final_caption = re.sub(regex_pattern, replacement, final_caption, flags=re.IGNORECASE)
     return final_caption
 
 def load_instructions(instructions_dir, instructions_name='instructions_0.txt'):
