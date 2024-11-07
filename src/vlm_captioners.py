@@ -148,7 +148,7 @@ class Llava_Flan_captioner:
 
     def convert_caption(self, raw_caption="", instruction_prompt="", 
     max_length=512, num_beams=5, no_repeat_ngram_size=3, repetition_penalty=1.2, 
-    length_penalty=2., temperature=0.9, top_p=0.9, do_sample=True,
+    length_penalty=2., temperature=0.9, top_p=0.9, do_sample=False,
     early_stopping=False):
         if not instruction_prompt:
             instruction_prompt = self.text_instruction
@@ -164,6 +164,7 @@ class Llava_Flan_captioner:
                                         truncation=True,
                                         max_length=max_length,
                                         ).input_ids.to(self.device)
+        
         # Ensure special token IDs are set
         if self.text_tokenizer.pad_token_id is None:
             self.text_tokenizer.pad_token_id = self.text_tokenizer.eos_token_id or 0
@@ -181,7 +182,9 @@ class Llava_Flan_captioner:
                 temperature=temperature,
                 top_p=top_p,
                 do_sample=do_sample,
+                pad_token_id=self.text_tokenizer.pad_token_id,
                 early_stopping=early_stopping
+
             )
 
         output_text = self.text_tokenizer.decode(output_ids[0],
@@ -201,7 +204,7 @@ class Llava_Flan_captioner:
 
     def prepare_and_convert(self, input_prompt=None, image_path=None, main_object_replacement=None,
     max_length=768, num_beams=5, no_repeat_ngram_size=3, repetition_penalty=1.2, 
-    length_penalty=2.0, temperature=0.9, top_p=0.9, do_sample=True, early_stopping=False):
+    length_penalty=2.0, temperature=0.9, top_p=0.9, do_sample=False, early_stopping=False):
         if main_object_replacement:
             self.main_object_replacement = main_object_replacement
 

@@ -60,7 +60,8 @@ def generate_caption(input_text=None, image_path=None, character_name='sbercat',
                      instructions_dir='instructions/inference', 
                      instructions_name='instructions_0.txt',
                      special_corrections=None, device='cuda'):
-
+    
+    global txt_model, txt_tokenizer, vl_model, vl_processor
     # Ensure appropriate models are loaded
     if image_path is not None:
         vl_model, vl_processor = load_vlm_model('llava-hf/llava-v1.6-mistral-7b-hf', device)
