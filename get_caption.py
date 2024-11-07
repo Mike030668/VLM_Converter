@@ -1,7 +1,7 @@
 # get_caption.py
 import os
 import json
-from src.load_models import load_vlm_model, load_text_model
+from src.utils import load_vlm_model, load_text_model
 
 # Import your captioner class (adjust the import path as necessary)
 from src.vlm_captioners import Llava_Flan_captioner
