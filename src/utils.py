@@ -45,7 +45,7 @@ def load_text_model(text_model_name, device):
     return txt_tokenizer, txt_model
 
 
-def display_plot(self, image, text, plot_size=(12, 6), max_font_size=20, min_font_size=12):
+def display_plot(image, text, plot_size=(12, 6), max_font_size=20, min_font_size=12):
     """
     Displays the image with the caption text side by side.
     """
@@ -73,10 +73,10 @@ def display_plot(self, image, text, plot_size=(12, 6), max_font_size=20, min_fon
     plt.subplots_adjust(wspace=0.1)  # Adjust space between image and text
     plt.show()
 
-def show_imagecaption(self, image_path, caption_text, plot_size=(12, 6), max_font_size=20, min_font_size=12):
+def show_imagecaption(image_path, caption_text, plot_size=(12, 6), max_font_size=20, min_font_size=12):
     """
     Uses the display_plot function to show the image with the provided caption.
     """
     # Load and resize image
     image = Image.open(image_path)
-    self.display_plot(image, caption_text, plot_size, max_font_size, min_font_size)
+    display_plot(image, caption_text, plot_size, max_font_size, min_font_size)
