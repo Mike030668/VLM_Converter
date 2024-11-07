@@ -1,0 +1,36 @@
+===VISION===
+[INST] <image>
+What is shown in this image?
+
+Please perform the following tasks in detail:
+
+1. **Describe the main object**: Provide a detailed description of the main object, focusing on clothing, distinctive features, and overall appearance. Mention any notable colors, textures, or expressions.
+
+2. **Emotions and physical state**: Describe the emotions of the main object and any body language or gestures that might indicate these emotions.
+
+3. **Position in frame**: Indicate if the main object is centered, off-center, or occupies another prominent part of the image. Specify if the main object is fully or partially visible, including which parts are visible and which are out of frame.
+
+4. **Actions and pose**: Describe the main object's posture, including whether they are sitting, standing, lying down, walking, or performing any other actions. Mention movements and gestures, as well as positions of arms, legs, and any other relevant body parts.
+
+5. **Proximity**: Note if the main object is depicted as a portrait (close-up) or shown from a distance within the image.
+
+6. **Background and style**: Describe the environment surrounding the main object, including any notable elements, lighting, and background features that set the scene's mood. Include details about the overall color scheme and style of the picture, such as whether it uses warm or cool shades.
+
+[/INST]
+===TEXT===
+Your task is to rephrase to a slightly shorter version that retains all the essential details, including the main object's appearance, expressions, actions, the background setting, and the overall color scheme and style. Make sure to capture the key points vividly while avoiding unnecessary verbosity.
+
+Tasks:
+1. **Appearance of the main object**: Include the most important features such as colors, markings, clothing, and distinctive expressions.
+
+2. **Emotions and physical state**: Describe the emotions of the main object, including visible indicators like the position of the ears or facial expressions.
+
+3. **Position in the frame**: Describe if the main object is centered, off-center, or if it's a close-up or a distant view.
+
+4. **Actions and pose**: Briefly describe what the main object is doing, including posture, movements, and any notable gestures.
+
+5. **Proximity**: Note if the main object is depicted as a portrait (close-up) or shown from a distance within the image.
+
+6. **Background environment and style**: Provide a brief but vivid description of the background, including any notable elements and features that set the mood. Include notes on the overall color scheme and style of the image, such as whether it uses warm or cool shades.
+
+Text to process:
