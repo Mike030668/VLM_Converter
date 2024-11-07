@@ -64,9 +64,9 @@ def generate_caption(input_text=None, image_path=None, character_name='sbercat',
     # Ensure appropriate models are loaded
     if image_path is not None:
         vl_model, vl_processor = load_vlm_model('llava-hf/llava-v1.6-mistral-7b-hf', device)
-        txt_model, txt_tokenizer = load_text_model('google/flan-t5-large', device)
+        txt_tokenizer, txt_model = load_text_model('google/flan-t5-large', device)
     elif input_text is not None:
-        txt_model, txt_tokenizer = load_text_model('google/flan-t5-large', device)
+        txt_tokenizer, txt_model = load_text_model('google/flan-t5-large', device)
     else:
         raise ValueError("Either 'input_text' or 'image_path' must be provided.")
 
@@ -75,8 +75,8 @@ def generate_caption(input_text=None, image_path=None, character_name='sbercat',
 
     # Instantiate the captioner
     captioner = Llava_Flan_captioner(
-        vlm_model=None,
-        processor=None,
+        vlm_model=vl_model,
+        processor=vl_processor,
         text_model=txt_model,
         text_tokenizer=txt_tokenizer,
         device=device

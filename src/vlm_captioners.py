@@ -12,9 +12,9 @@ class Llava_Flan_captioner:
     def __init__(self, vlm_model, processor, text_model, text_tokenizer, device='cuda'):
 
         self.processor = processor
-        self.vlm_model = vlm_model
+        self.vlm_model = vlm_model.half().to(device) if vlm_model else None
         self.text_tokenizer = text_tokenizer
-        self.text_model = text_model
+        self.text_model = text_model.half().to(device) if text_model else None
         self.device = device
         self.vision_instruction = ""
         self.text_instruction = ""
@@ -184,7 +184,10 @@ class Llava_Flan_captioner:
                 early_stopping=early_stopping
             )
 
-        output_text = self.text_tokenizer.decode(output_ids[0], skip_special_tokens=True).strip()
+        output_text = self.text_tokenizer.decode(output_ids[0],
+                                                 skip_special_tokens=True,
+                                                 clean_up_tokenization_spaces=True  # or False, based on your preference
+                                                 ).strip()
         # Replace main object if specified
         if self.main_object_replacement:
             output_text = self.replace_main_subject(output_text, self.main_object_replacement)

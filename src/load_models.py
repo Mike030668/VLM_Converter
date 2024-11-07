@@ -1,6 +1,5 @@
-import os
+
 import torch
-import json
 from transformers import LlavaNextProcessor, LlavaNextForConditionalGeneration
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 
@@ -35,7 +34,7 @@ def load_text_model(text_model_name, device):
     global txt_model, txt_tokenizer
     if txt_model is None or txt_tokenizer is None:
         print("Loading text model and tokenizer...")
-        txt_tokenizer = T5Tokenizer.from_pretrained(text_model_name)
+        txt_tokenizer = T5Tokenizer.from_pretrained(text_model_name, legacy=False)
         txt_model = T5ForConditionalGeneration.from_pretrained(
             text_model_name
         ).to(device)
