@@ -12,9 +12,25 @@ vl_processor = None
 txt_model = None
 txt_tokenizer = None
 
+# define ide
+ide_type = ''
+if 'google.colab' in str(get_ipython()):
+  ide_type += 'CoLab'
+elif 'vscode' in str(get_ipython()):
+  ide_type += 'VS Code'
+else:
+  ide_type += 'Jupyter Notebook'
+print(f"Running on {ide_type}")
 
-def load_instructions(instructions_dir, instructions_name='instructions_0'):
+def apply_special_corrections(final_caption, special_corrections):
+    for pattern, replacement in special_corrections:
+        final_caption = final_caption.replace(pattern, replacement)
+    return final_caption
+
+def load_instructions(instructions_dir, instructions_name='instructions_0.txt'):
     instructions_file = os.path.join(instructions_dir, instructions_name)
+    if ide_type=="CoLab": instructions_file = "/content/VLM_Converter/"+instructions_file
+    #print(instructions_file)
     if not os.path.exists(instructions_file):
         raise FileNotFoundError(f"Instructions file not found: {instructions_file}")
 
@@ -23,6 +39,7 @@ def load_instructions(instructions_dir, instructions_name='instructions_0'):
             instructions = json.load(f)
         vision_instruction = instructions.get('vision_instruction', '')
         text_instruction = instructions.get('text_instruction', '')
+
     elif instructions_file.lower().endswith('.txt'):
         with open(instructions_file, 'r', encoding='utf-8') as f:
             content = f.read()
@@ -40,14 +57,16 @@ def load_instructions(instructions_dir, instructions_name='instructions_0'):
     return vision_instruction, text_instruction
 
 def generate_caption(input_text=None, image_path=None, character_name='sbercat',
-                     instructions_dir='instructions/inference', instructions_name='instructions_0',
+                     instructions_dir='instructions/inference', 
+                     instructions_name='instructions_0.txt',
                      special_corrections=None, device='cuda'):
+
     # Ensure appropriate models are loaded
     if image_path is not None:
-        load_vlm_model('llava-hf/llava-v1.6-mistral-7b-hf', device)
-        load_text_model('google/flan-t5-large', device)
+        vl_model, vl_processor = load_vlm_model('llava-hf/llava-v1.6-mistral-7b-hf', device)
+        txt_model, txt_tokenizer = load_text_model('google/flan-t5-large', device)
     elif input_text is not None:
-        load_text_model('google/flan-t5-large', device)
+        txt_model, txt_tokenizer = load_text_model('google/flan-t5-large', device)
     else:
         raise ValueError("Either 'input_text' or 'image_path' must be provided.")
 
@@ -56,10 +75,10 @@ def generate_caption(input_text=None, image_path=None, character_name='sbercat',
 
     # Instantiate the captioner
     captioner = Llava_Flan_captioner(
-        vlm_model=vl_model,
-        processor=vl_processor,
+        vlm_model=None,
+        processor=None,
         text_model=txt_model,
-        tokenizer=txt_tokenizer,
+        text_tokenizer=txt_tokenizer,
         device=device
     )
 
@@ -73,7 +92,11 @@ def generate_caption(input_text=None, image_path=None, character_name='sbercat',
         input_prompt=input_text,
         image_path=image_path,
         main_object_replacement=character_name,
-        special_corrections=special_corrections
+
     )
+    
+    # Apply special corrections
+    if special_corrections:
+        final_caption = apply_special_corrections(final_caption, special_corrections)
 
     return final_caption

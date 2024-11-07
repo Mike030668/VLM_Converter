@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+##!/usr/bin/env python
 
 import os
 import sys
@@ -102,7 +102,7 @@ def main():
         vlm_model=vl_model,
         processor=vl_processor,
         text_model=txt_model,
-        tokenizer=txt_tokenizer,
+        text_tokenizer=txt_tokenizer,
         device=device
     )
 

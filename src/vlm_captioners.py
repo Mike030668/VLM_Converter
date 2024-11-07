@@ -3,14 +3,18 @@ import torch
 import gc
 import re
 
+# Ensure CUDA operations are synchronous for debugging
+import os
+os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
 # Define the VLMCaptioner class here
 class Llava_Flan_captioner:
-    def __init__(self, vlm_model, processor, text_model, tokenizer, device='cuda'):
-        self.vlm_model = vlm_model.half().to(device)
+    def __init__(self, vlm_model, processor, text_model, text_tokenizer, device='cuda'):
+
         self.processor = processor
-        self.text_model = text_model.half().to(device)
-        self.tokenizer = tokenizer
+        self.vlm_model = vlm_model
+        self.text_tokenizer = text_tokenizer
+        self.text_model = text_model
         self.device = device
         self.vision_instruction = ""
         self.text_instruction = ""
@@ -22,11 +26,14 @@ class Llava_Flan_captioner:
         special_tokens_dict = {
             'additional_special_tokens': [
                 self.main_object_replacement,
-                f"{self.main_object_replacement}'s"
+                self.main_object_replacement.capitalize(),
+                f"{self.main_object_replacement}'s",
+                f"{self.main_object_replacement}'s".capitalize()
             ]
         }
-        num_added_toks = self.tokenizer.add_special_tokens(special_tokens_dict)
-        self.text_model.resize_token_embeddings(len(self.tokenizer))
+
+        num_added_toks = self.text_tokenizer.add_special_tokens(special_tokens_dict)
+        self.text_model.resize_token_embeddings(len(self.text_tokenizer))
 
     def extract_main_object(self, caption):
         # Use spaCy to extract the main subject
@@ -117,7 +124,9 @@ class Llava_Flan_captioner:
 
         with torch.no_grad(), torch.amp.autocast('cuda'):
         # torch.amp.autocast('cuda', args...)
-            inputs = self.processor(prompt, image, return_tensors="pt").to(self.device)
+            inputs = self.processor(prompt, 
+            image, return_tensors="pt").to(self.device)
+
             output = self.vlm_model.generate(
                 **inputs,
                 max_length=max_length,
@@ -149,7 +158,17 @@ class Llava_Flan_captioner:
         #    raw_caption = self.replace_main_subject(raw_caption, self.main_object_replacement)
 
         instruction_prompt = f"{instruction_prompt}\n{raw_caption}"
-        input_ids = self.tokenizer(instruction_prompt, return_tensors="pt").input_ids.to(self.device)
+        input_ids = self.text_tokenizer(instruction_prompt, 
+                                        return_tensors="pt",
+                                        padding=True,
+                                        truncation=True,
+                                        max_length=max_length,
+                                        ).input_ids.to(self.device)
+        # Ensure special token IDs are set
+        if self.text_tokenizer.pad_token_id is None:
+            self.text_tokenizer.pad_token_id = self.text_tokenizer.eos_token_id or 0
+        if self.text_model.config.pad_token_id is None:
+            self.text_model.config.pad_token_id = self.text_tokenizer.pad_token_id
 
         with torch.no_grad(), torch.amp.autocast('cuda'):
             output_ids = self.text_model.generate(
@@ -165,7 +184,7 @@ class Llava_Flan_captioner:
                 early_stopping=early_stopping
             )
 
-        output_text = self.tokenizer.decode(output_ids[0], skip_special_tokens=True).strip()
+        output_text = self.text_tokenizer.decode(output_ids[0], skip_special_tokens=True).strip()
         # Replace main object if specified
         if self.main_object_replacement:
             output_text = self.replace_main_subject(output_text, self.main_object_replacement)
@@ -186,7 +205,8 @@ class Llava_Flan_captioner:
         # Generate intermediate description
         if image_path:
             try:
-                intermediate_caption = self.vlm_caption(image_path=image_path, prompt=self.vision_instruction)
+                intermediate_caption = self.vlm_caption(image_path=image_path, 
+                prompt=self.vision_instruction)
             except ValueError as e:
                 raise ValueError(f"Error generating caption from image: {e}")
 
