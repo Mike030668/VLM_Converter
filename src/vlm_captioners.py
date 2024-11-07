@@ -20,6 +20,7 @@ class Llava_Flan_captioner:
         self.text_instruction = ""
         self.main_object_replacement = ""
         import spacy
+        spacy.require_gpu()
         self.nlp = spacy.load("en_core_web_sm")
 
         # Add main_object to the tokenizer vocabulary
@@ -148,7 +149,7 @@ class Llava_Flan_captioner:
         return caption
 
     def vlm_caption(self, image_path, prompt="", resize=(768, 768), max_length=768, 
-    num_beams=5, no_repeat_ngram_size=3, repetition_penalty=1.2, length_penalty = 2.0):
+    num_beams=5, no_repeat_ngram_size=3, repetition_penalty=1.2,):
         try:
             # Load and resize image
             image = Image.open(image_path)
@@ -172,8 +173,7 @@ class Llava_Flan_captioner:
                 early_stopping=True,
                 no_repeat_ngram_size=no_repeat_ngram_size,
                 repetition_penalty=repetition_penalty,
-                length_penalty = length_penalty,
-                pad_token_id =0
+                #pad_token_id =0
             )
 
         output_str = self.processor.decode(output[0],
