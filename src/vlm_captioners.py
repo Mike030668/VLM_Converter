@@ -10,25 +10,27 @@ os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 # Define the VLMCaptioner class here
 class Llava_Flan_captioner:
     def __init__(self, vlm_model, processor, text_model, text_tokenizer, device='cuda'):
-
+        self.device = device
         self.processor = processor
         self.vlm_model = vlm_model.half().to("cpu") if vlm_model else None #.to(device)
         self.text_tokenizer = text_tokenizer
         self.text_model = text_model.half().to("cpu") if text_model else None #.to(device)
-        self.device = device
         self.vision_instruction = ""
         self.text_instruction = ""
         self.main_object_replacement = ""
+        
+        # Initialize spaCy
         import spacy
-        spacy.require_gpu()
+        if self.device == 'cuda':
+            spacy.require_gpu()
         self.nlp = spacy.load("en_core_web_sm")
 
         # Add main_object to the tokenizer vocabulary
         special_tokens_dict = {
             'additional_special_tokens': [
                 self.main_object_replacement,
-                self.main_object_replacement.capitalize(),
-                #f"{self.main_object_replacement}'s",
+                #self.main_object_replacement.capitalize(),
+                f"{self.main_object_replacement}'s",
                 #f"{self.main_object_replacement}'s".capitalize()
             ]
         }
@@ -45,44 +47,6 @@ class Llava_Flan_captioner:
                     subject_phrase = ' '.join([t.text for t in token.subtree])
                     return subject_phrase
         return None
-
-
-    """
-    def replace_pronouns(self, caption, replacement):
-        doc = self.nlp(caption)
-        new_tokens = []
-        main_object_introduced = False
-
-        for sent in doc.sents:
-            # Check if the main object is introduced in the sentence
-            if not main_object_introduced:
-                if replacement.lower() in sent.text.lower():
-                    main_object_introduced = True
-
-            # Process tokens in the sentence
-            for token in sent:
-                token_text = token.text
-                if main_object_introduced:
-                    # Replace pronouns that likely refer to the main object
-                    if token.pos_ == 'PRON' and token.tag_ in {'PRP', 'PRP$'}:
-                        # Handle possessive pronouns
-                        if token.tag_ == 'PRP$':
-                            if token.text[0].isupper():
-                                token_text = replacement.capitalize() + "'s"
-                            else:
-                                token_text = replacement + "'s"
-                        else:
-                            if token.text[0].isupper():
-                                token_text = replacement.capitalize()
-                            else:
-                                token_text = replacement
-                new_tokens.append(token_text)
-        # Reconstruct the caption
-        new_caption = ' '.join(new_tokens)
-        # Fix spacing around punctuation
-        new_caption = re.sub(r'\s([?.!",\'])(?=(?:\s|$))', r'\1', new_caption)
-        return new_caption.strip() 
-        """
 
     def replace_pronouns(self, caption, replacement):
         # Map pronouns to replacements
@@ -148,8 +112,24 @@ class Llava_Flan_captioner:
             print("Main subject not found in the caption.")
         return caption
 
-    def vlm_caption(self, image_path, prompt="", resize=(768, 768), max_length=768, 
-    num_beams=5, no_repeat_ngram_size=3, repetition_penalty=1.2,):
+    def _generate_output(self, inputs, num_beams, no_repeat_ngram_size, 
+    max_new_tokens, repetition_penalty):
+        return self.vlm_model.generate(
+            **inputs,
+            max_new_tokens=max_new_tokens,
+            num_beams=num_beams,
+            early_stopping=True,
+            no_repeat_ngram_size=no_repeat_ngram_size,
+            repetition_penalty=repetition_penalty,
+            pad_token_id=self.vlm_model.config.pad_token_id,
+            eos_token_id=self.vlm_model.config.eos_token_id,
+            )
+
+
+
+    def vlm_caption(self, image_path, prompt="", resize=(768, 768),  
+    num_beams=5, no_repeat_ngram_size=3, repetition_penalty=1.2, 
+    max_new_tokens=1024):
         try:
             # Load and resize image
             image = Image.open(image_path)
@@ -161,21 +141,30 @@ class Llava_Flan_captioner:
         if not prompt:
             prompt = self.vision_instruction
 
-        with torch.no_grad(), torch.amp.autocast('cuda'):
-        # torch.amp.autocast('cuda', args...)
-            inputs = self.processor(prompt, 
-            image, return_tensors="pt").to(self.device)
+        # Ensure eos_token_id and pad_token_id are set
+        if self.vlm_model.config.eos_token_id is None:
+            self.vlm_model.config.eos_token_id = self.processor.tokenizer.eos_token_id or 2
+        if self.vlm_model.config.pad_token_id is None:
+            self.vlm_model.config.pad_token_id = self.vlm_model.config.eos_token_id
 
-            self.vlm_model.to(self.device)
-            output = self.vlm_model.generate(
-                **inputs,
-                max_length=max_length,
-                num_beams=num_beams,
-                early_stopping=True,
-                no_repeat_ngram_size=no_repeat_ngram_size,
-                repetition_penalty=repetition_penalty,
-                #pad_token_id =0
-            )
+        # Prepare inputs
+        inputs = self.processor(
+            images=image,
+            text=prompt,
+            return_tensors="pt"
+        ).to(self.device)
+
+        self.vlm_model.to(self.device)
+
+        with torch.no_grad():
+            if self.device == 'cuda':
+                with torch.amp.autocast(device_type='cuda', dtype=torch.float16):
+                    output = self._generate_output(inputs, num_beams, 
+                    no_repeat_ngram_size, max_new_tokens, repetition_penalty)
+            else:
+                output = self._generate_output(inputs, num_beams, 
+                no_repeat_ngram_size, max_new_tokens, repetition_penalty)
+
 
         output_str = self.processor.decode(output[0],
                                            skip_special_tokens=True,
@@ -192,7 +181,7 @@ class Llava_Flan_captioner:
 
     def convert_caption(self, raw_caption="", instruction_prompt="", 
     max_length=512, num_beams=5, no_repeat_ngram_size=3, repetition_penalty=1.2, 
-    length_penalty=2., temperature=0.9, top_p=0.9, do_sample=False,
+    length_penalty=2., temperature=0.9, top_p=0.9, do_sample=True,
     early_stopping=False):
         if not instruction_prompt:
             instruction_prompt = self.text_instruction
@@ -247,7 +236,7 @@ class Llava_Flan_captioner:
 
     def prepare_and_convert(self, input_prompt=None, image_path=None, main_object_replacement=None,
     max_length=768, num_beams=5, no_repeat_ngram_size=3, repetition_penalty=1.2, 
-    length_penalty=2.0, temperature=0.9, top_p=0.9, do_sample=False, early_stopping=False):
+    length_penalty=2.0, temperature=0.9, top_p=0.9, do_sample=True, early_stopping=False):
         if main_object_replacement:
             self.main_object_replacement = main_object_replacement
 
