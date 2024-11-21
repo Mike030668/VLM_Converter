@@ -17,8 +17,6 @@ def load_vlm_model(vlm_model_name, device):
         vl_processor = LlavaNextProcessor.from_pretrained(vlm_model_name)
         
         # Set required attributes
-        vl_processor.patch_size = 14  # Replace with the correct value
-        vl_processor.vision_feature_select_strategy = 'patch'  # Replace with the correct value
         vl_model = LlavaNextForConditionalGeneration.from_pretrained(
             vlm_model_name,
             torch_dtype=torch.float16,
